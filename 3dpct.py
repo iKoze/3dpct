@@ -55,8 +55,8 @@ class gparser(object):
             self.parse(line)
         
     def parse(self, line):
-        if not self.re_empty.match(line) and 
-            not self.re_comment_only.match(line):
+        if (not self.re_empty.match(line) and 
+            not self.re_comment_only.match(line)):
             line = self.re_comments.sub("",line)
             if self.do_checksum:
                 line = "N"+str(len(self.parsed)+1)+" "+line
