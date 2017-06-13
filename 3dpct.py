@@ -12,7 +12,7 @@
 #
 import serial, os, sys, re, argparse, string, signal
 
-class gparser:
+class gparser(object):
     def __init__(self):
         # Matches G-Code comments
         self.re_comments = re.compile('\s*;.*$')
@@ -46,7 +46,7 @@ class gparser:
     
     def prepare_checksum(self):
         self.parsed = []
-        return self.csline("M110 N0")
+        return "M110 N0"
     
     def parse_file(self):
         if self.do_checksum:
@@ -55,7 +55,8 @@ class gparser:
             self.parse(line)
         
     def parse(self, line):
-        if not self.re_empty.match(line) and not self.re_comment_only.match(line):
+        if not self.re_empty.match(line) and 
+            not self.re_comment_only.match(line):
             line = self.re_comments.sub("",line)
             if self.do_checksum:
                 line = "N"+str(len(self.parsed)+1)+" "+line
@@ -71,7 +72,7 @@ class gparser:
         for i in self.parsed:
             print i
 
-class dddprinter:
+class dddprinter(object):
     def __init__(self):
         self.parser = gparser()
         # Matches Emergency Condition
@@ -79,7 +80,8 @@ class dddprinter:
         # Matches resend query with (optional leading n)
         self.re_resend = re.compile('(^rs [Nn]?)|(^Resend:)')
         # Matches lines which should be ignored
-        self.re_ignore = re.compile('(^echo:)|(^[Mm]arlin)|(^start)|(^Error:checksum)|(^T:)')
+        self.re_ignore = re.compile('(^echo:)|(^[Mm]arlin)|(^start)|'
+            '(^Error:checksum)|(^\D:)')
         self.max_resends = 10
         self.resend_counter = 0
         self.currentln = 1
@@ -96,7 +98,6 @@ class dddprinter:
 
     def connect(self,tty,baud):
         self.ser = serial.Serial(tty, baud, timeout=1)
-        #self.cswrite("M110 N0") # Reset Line Counter
 
     def cswrite(self,line):
         self.write(parser.csline(line))
@@ -121,7 +122,7 @@ class dddprinter:
         self.ser.write(line+"\n")
 
     def read(self):
-        result = self.ser.readline().rstrip()
+        result = self.ser.readline().strip()
         self.rdm(result)
         return result
 
@@ -140,11 +141,11 @@ class dddprinter:
             self.panic("too many resends!")
 
     def waitforok(self):
-        result = self.read().rstrip()
+        result = self.read()
         while (len(result) == 0 or
                 self.re_ignore.match(result) or
                 parser.re_empty.match(result)):
-            result = self.read().rstrip() # Ignore empty lines, unuseful infos, 0-lenght
+            result = self.read() # Ignore empty lines, unuseful infos, 0-lenght
         if self.re_emergency.match(result):
             # Emergency
             self.panic("received EMERGENCY CONDITION!")
@@ -274,7 +275,8 @@ if __name__ == "__main__":
             parser.dump_parsed()
             done = True
         if 'print' in args:
-            print "Using device "+args['device']+" with "+str(args['baud'])+" Baud."
+            print ("Using device "+args['device']+" with "+str(args['baud'])+
+                " Baud.")
             printer.connect(args['device'], args['baud'])
             if printer.parser.do_checksum:
                 printer.write(printer.parser.prepare_checksum())
